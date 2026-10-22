@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+const here=path.dirname(fileURLToPath(import.meta.url)), bridge=path.dirname(here);
+const task={jobId:'job-1',sceneId:'scene-1',aspectRatio:'9:16',outputs:1,budgetGranted:true,remainingCredits:60,remainingGenerations:3,prompt:'A fixed subject climbs one small step with a gentle camera push.',duration:6};
+test('real DOM fixture: configure, strict cost, changed settings, result matching, login and ambiguity',async context=>{
+  let playwright;
+  try{const require=createRequire(import.meta.url);playwright=require(process.env.MOTIF_PLAYWRIGHT_MODULE||'playwright');}catch{context.skip('Set MOTIF_PLAYWRIGHT_MODULE to the local Playwright module to run DOM fixtures.');return;}
+  const server=http.createServer(async(req,res)=>{try{const p=path.resolve(bridge,'.'+new URL(req.url,'http://localhost').pathname);if(!p.startsWith(bridge+path.sep))throw Error();const bytes=await fs.readFile(p);res.setHeader('Content-Type',p.endsWith('.mjs')?'text/javascript':'text/html');res.end(bytes);}catch{res.writeHead(404).end();}});
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));context.after(()=>new Promise(r=>server.close(r)));
+  const browser=await playwright.chromium.launch(process.env.MOTIF_BROWSER_PATH?{executablePath:process.env.MOTIF_BROWSER_PATH,headless:true}:{headless:true,channel:'msedge'});context.after(()=>browser.close());
+  const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/tests/fixture.html`);
+  await page.evaluate(async()=>{window.adapter=await import('/adapter.mjs');});
+  const configured=await page.evaluate(async t=>{const r=await adapter.configure(document,t,async()=>{});return {cost:r.cost,prompt:r.prompt.value,aspect:document.querySelector('[aria-label="Aspect ratio"]').selectedOptions[0].textContent};},task);
+  assert.equal(configured.cost,20);assert.equal(configured.prompt,task.prompt);assert.equal(configured.aspect,'9:16');
+  const changed=await page.evaluate(t=>{document.querySelector('[aria-label="Aspect ratio"]').value='16:9';try{adapter.ready(document,t);return 'unexpected'}catch(e){return e.message}},task);assert.match(changed,/aspect changed/);
+  await page.evaluate(async t=>adapter.configure(document,t,async()=>{}).then(()=>{}),task);
+  const unknown=await page.evaluate(t=>{document.querySelector('button').textContent='Generate video';try{adapter.ready(document,t);return 'unexpected'}catch(e){return e.message}},task);assert.match(unknown,/cost is not visible/);
+  await page.evaluate(()=>{document.querySelector('button').textContent='Generate video · 20 credits'});
+  const result=await page.evaluate(t=>{const card=document.createElement('article');card.textContent=t.prompt;const v=document.createElement('video');v.src='https://lh3.googleusercontent.com/new.mp4';Object.defineProperty(v,'videoWidth',{value:1080});Object.defineProperty(v,'videoHeight',{value:1920});card.append(v);document.querySelector('#results').append(card);return adapter.findResult(document,t,[]);},task);assert.equal(result.width,1080);
+  const ambiguity=await page.evaluate(t=>{document.querySelector('#results').append(document.querySelector('article').cloneNode(true));const videos=document.querySelectorAll('video');Object.defineProperty(videos[1],'videoWidth',{value:1080});Object.defineProperty(videos[1],'videoHeight',{value:1920});videos[1].src='https://lh3.googleusercontent.com/new2.mp4';try{adapter.findResult(document,t,[]);return 'unexpected'}catch(e){return e.message}},task);assert.match(ambiguity,/Several new videos/);
+  const badge=await page.evaluate(()=>{const frame=document.createElement('iframe');frame.src='/recaptcha/api2/anchor';frame.title='reCAPTCHA';document.body.append(frame);try{adapter.checkBlockers(document);return 'allowed'}catch(e){return e.message}});assert.equal(badge,'allowed','passive badge is not a challenge');
+  const challenge=await page.evaluate(()=>{document.querySelector('iframe').src='/recaptcha/api2/bframe';try{adapter.checkBlockers(document);return 'unexpected'}catch(e){return e.message}});assert.match(challenge,/CAPTCHA/);
+  await page.goto(`http://127.0.0.1:${server.address().port}/tests/flow-popover.html`);
+  await page.evaluate(async()=>{window.adapter=await import('/adapter.mjs');});
+  const custom=await page.evaluate(async t=>{const result=await adapter.configure(document,t,async()=>{});return{cost:result.cost,text:result.prompt.textContent,summary:document.querySelector('#pill').textContent};},task);
+  assert.equal(custom.cost,20);assert.equal(custom.text,task.prompt);assert.match(custom.summary,/crop_9_16 x1/);
+  const login=await page.evaluate(()=>{document.body.innerHTML='<a href="#">Sign in</a>';try{adapter.checkBlockers(document);return 'unexpected'}catch(e){return e.message}});assert.match(login,/LOGIN_REQUIRED/);
+});

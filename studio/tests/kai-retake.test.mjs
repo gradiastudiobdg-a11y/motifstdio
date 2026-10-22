@@ -1,0 +1,20 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';import os from 'node:os';import path from 'node:path';
+import {Autopilot} from '../autopilot.mjs';import {createProject} from '../public/planner.mjs';import {KAI_BRIEF} from '../public/kai-brand.mjs';
+test('a quality retake preserves earlier credits, attempts, receipts and footage, and cannot exceed the fourth generation',async t=>{
+  const dataDir=await fs.mkdtemp(path.join(os.tmpdir(),'kai-retake-'));t.after(()=>fs.rm(dataDir,{recursive:true,force:true}));
+  const auto=await new Autopilot({dataDir,adapters:{}}).init();t.after(()=>auto.close());
+  const project=createProject(KAI_BRIEF);project.scenes.forEach((s,i)=>s.assetId=`existing-${i}`);
+  const job={id:'kai-retake-fixture',status:'complete',brief:project.brief,project,options:{flowProvider:'google-flow-mcp',allowPaid:true,maxGenerations:4,creditBudget:100},generations:3,spentCredits:45,outputPath:'final.mp4',events:[],scenes:project.scenes.map(s=>({...s,promptHash:'old',persistedIntentId:`old-${s.id}`,status:'complete'}))};
+  auto.jobs.set(job.id,job);await fs.mkdir(auto.dir(job),{recursive:true});await fs.writeFile(path.join(auto.dir(job),'final.mp4'),'previous-local-fixture');await fs.writeFile(path.join(auto.dir(job),'scene-03-flow-mcp.json'),'historical-receipt');
+  const input={sceneId:'scene-03',visual:'Kai sorts stationery into the same shoebox.',motion:'Locked camera then hold on the result.',reason:'Generated overlay in prior source.'};
+  job.options.maxGenerations=3;await assert.rejects(auto.retake(job,input),/allowance remains/);job.options.maxGenerations=4;
+  await auto.retake(job,input);assert.equal(job.generations,3);assert.equal(job.spentCredits,45);assert.equal(job.scenes[2].id,'scene-04');assert.equal(job.scenes[2].assetId,null);assert.equal(job.project.scenes[2].id,'scene-04');assert.equal(job.project.scenes[0].assetId,'existing-0');assert.equal(job.retakeHistory[0].scene.assetId,'existing-2');
+  assert.equal(await fs.readFile(path.join(auto.dir(job),'scene-03-flow-mcp.json'),'utf8'),'historical-receipt');assert.equal(await fs.readFile(path.join(auto.dir(job),'before-scene-04-final.mp4'),'utf8'),'previous-local-fixture');
+  job.status='waiting_flow';await auto.event({jobId:job.id,sceneId:'scene-04',status:'submitted',persistedIntentId:'fourth-intent',observedCreditCost:15},{provider:'google-flow-mcp'});assert.equal(job.generations,4);assert.equal(job.spentCredits,60);
+  job.scenes[2].assetId='fourth-result';job.status='complete';await assert.rejects(auto.retake(job,{...input,sceneId:'scene-04'}),/allowance remains/);
+  job.project.scenes[2].assetId='fourth-result';job.outputPath='final.mp4';
+  await assert.rejects(auto.refinish(job,{scenes:[]}),/only type layout/);
+  await assert.rejects(auto.refinish(job,{soundCues:[{time:31,kind:'cut'}]}),/Invalid sound cues/);
+  await auto.refinish(job,{kaiLayout:{openingFontSize:78,openingHookY:224,showProcessNotes:false},soundCues:[{time:3.2,kind:'cut'}]});
+  assert.equal(job.generations,4);assert.equal(job.spentCredits,60);assert.equal(job.scenes[2].assetId,'fourth-result');assert.equal(job.project.kaiLayout.showProcessNotes,false);assert.equal(job.status,'waiting_setup');
+});

@@ -1,0 +1,17 @@
+import path from 'node:path';
+import { promises as fs } from 'node:fs';
+import { studioDir, readJson, runCommand } from '../automation/common.mjs';
+import { toSrt } from '../public/planner.mjs';
+const jobDir=path.join(studioDir,'.studio/jobs/7cb9d178-b3ff-4ef4-a558-ce560151039c');
+const job=await readJson(path.join(jobDir,'job.json'));
+const validation=await readJson(path.join(jobDir,'finish-validation.json'));
+if(job.status!=='complete'||validation.testFixture!==false||validation.duration!==30||validation.sourceChecks.length!==2||job.generations!==4)throw Error('Real complete production validation is required.');
+const out=path.resolve(studioDir,'../exports/mulai-sebelum-mood-datang'); await fs.mkdir(out,{recursive:true});
+await fs.copyFile(path.join(jobDir,'final.mp4'),path.join(out,'video.mp4'));
+await fs.copyFile(path.join(jobDir,'project.json'),path.join(out,'project.json'));
+await fs.writeFile(path.join(out,'subtitle.srt'),toSrt(job.project));
+await fs.writeFile(path.join(out,'caption.txt'),`${job.project.title}\n\n${job.project.publishing.description}\n\n${job.project.publishing.hashtags.join(' ')}\n`);
+await fs.copyFile(path.join(jobDir,'finish-validation.json'),path.join(out,'validation.json'));
+await fs.writeFile(path.join(out,'production.json'),JSON.stringify({title:job.project.title,duration:30,aspect:'9:16',width:1080,height:1920,fps:30,flowNewGenerations:2,totalAttemptsIncludingHistorical:job.generations,liveCreditsBefore:830,liveCreditsAfter:800,verifiedCreditsThisSession:30,legacyReservationRetained:15,totalReservedCredits:job.spentCredits,creditCap:100,voice:'id-ID-ArdiNeural',originalMusic:true,sourceRetiming:'Two 10-second Flow clips edited into two 15-second scenes',jobId:job.id},null,2));
+await runCommand(path.join(studioDir,'tools/ffmpeg.exe'),['-y','-ss','6','-i',path.join(out,'video.mp4'),'-frames:v','1',path.join(out,'cover.jpg')]);
+console.log(JSON.stringify({directory:out,video:path.join(out,'video.mp4'),bytes:(await fs.stat(path.join(out,'video.mp4'))).size}));

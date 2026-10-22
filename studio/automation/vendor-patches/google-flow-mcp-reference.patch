@@ -1,0 +1,237 @@
+diff --git a/src/browser.ts b/src/browser.ts
+index 324148e..b36fe0c 100644
+--- a/src/browser.ts
++++ b/src/browser.ts
+@@ -42,6 +42,27 @@ export class FlowBrowser {
+ 
+   constructor(private readonly opts: BrowserOptions) {}
+ 
++  /** Classify connection/login UI without waiting for an authenticated token.
++   * No account labels, page text, query strings or credentials leave this method.
++   */
++  async inspectState() {
++    let page = this.page;
++    if (!page || page.isClosed()) {
++      this.connecting ??= this.connect().finally(() => { this.connecting = undefined; });
++      try { page = await this.connecting; } catch { return { stage: 'network_error' }; }
++    }
++    const host = new URL(page.url()).hostname;
++    const content = await page.locator('body').innerText().catch(() => '');
++    const visibleChallenge = await page.locator('iframe[src*="recaptcha"],iframe[title*="challenge" i]').evaluateAll(elements => elements.some(el => {const r=el.getBoundingClientRect();const s=getComputedStyle(el);return r.width>200&&r.height>70&&s.visibility!=='hidden'&&s.display!=='none';})).catch(() => false);
++    if (visibleChallenge || /verify you are human|verifikasi bahwa anda manusia|saya bukan robot|i.m not a robot/i.test(content)) return { stage: 'verification_required' };
++    if (/browser or app may not be secure|browser atau aplikasi ini mungkin tidak aman|couldn.t sign you in|tidak dapat membuat anda login/i.test(content)) return { stage: 'login_blocked' };
++    if (host === 'accounts.google.com') return { stage: 'login_required' };
++    if (!page.url().startsWith(FLOW_ORIGIN) || /ERR_NETWORK|ERR_QUIC|ERR_INTERNET|situs ini tidak dapat dijangkau|site can.t be reached/i.test(content)) return { stage: 'network_error' };
++    if (page.url().includes('/about') || await page.getByRole('button', { name: /^(?:Sign in|Login|Masuk)$/i }).count()) return { stage: 'login_required' };
++    const tokenReady = await page.evaluate(() => !!(window as any).WIZ_global_data?.SNlM0e).catch(() => false);
++    return { stage: tokenReady ? 'workspace' : 'loading' };
++  }
++
+   async launchForLogin(): Promise<Page> {
+     const opts = { ...this.opts, headless: false };
+     mkdirSync(opts.profileDir, { recursive: true });
+@@ -50,7 +71,7 @@ export class FlowBrowser {
+       executablePath: opts.executablePath,
+       headless: false,
+       viewport: null,
+-      args: ['--disable-blink-features=AutomationControlled'],
++      args: ['--disable-quic'],
+     });
+     const page = this.context.pages()[0] ?? (await this.context.newPage());
+     await page.goto(FLOW_ORIGIN + '/', { waitUntil: 'domcontentloaded' });
+@@ -69,11 +90,12 @@ export class FlowBrowser {
+         executablePath: this.opts.executablePath,
+         headless: this.opts.headless,
+         viewport: null,
+-        args: ['--disable-blink-features=AutomationControlled'],
++        args: ['--disable-quic'],
+       });
+     }
+     // Reuse an open Flow tab if there is one (CDP mode), else open our own.
+-    const existing = this.context.pages().find((p) => p.url().startsWith(FLOW_ORIGIN));
++    const existing = this.context.pages().find((p) => p.url().startsWith(FLOW_ORIGIN + '/project/'))
++      ?? this.context.pages().find((p) => p.url().startsWith(FLOW_ORIGIN) && !p.url().includes('/about'));
+     const page = existing ?? (await this.context.newPage());
+     if (!existing) await page.goto(FLOW_ORIGIN + '/', { waitUntil: 'domcontentloaded' });
+     page.on('close', () => { if (this.page === page) this.page = undefined; });
+diff --git a/src/flow.ts b/src/flow.ts
+index f86c6d7..ad4ea8b 100644
+--- a/src/flow.ts
++++ b/src/flow.ts
+@@ -45,7 +45,10 @@ export class FlowClient {
+   private withUi<T>(fn: (ui: FlowUi) => Promise<T>): Promise<T> {
+     const run = async () => {
+       const page = await this.browser.ready();
+-      try { return await fn(new FlowUi(page)); }
++      // UI fixes are loaded per operation so a selector fix doesn't require
++      // restarting the user's whole desktop application again.
++      const { FlowUi: CurrentUi } = await import(new URL(`./ui.js?v=${Date.now()}`, import.meta.url).href);
++      try { return await fn(new CurrentUi(page)); }
+       catch (e) { if (e instanceof UiError) throw new FlowError(e.message); throw e; }
+     };
+     const next = this.uiQueue.then(run, run);
+@@ -217,7 +220,7 @@ export class FlowClient {
+         resolution: isOmni ? o.model.resolution : undefined,
+         durationSec: isOmni ? o.model.durationSec : undefined,
+       });
+-      if (quote === undefined) throw new FlowError('Could not read Flow\'s credit quote; not generating.');
++      if (quote === undefined || !Number.isInteger(quote) || quote <= 0) throw new FlowError('Could not read Flow\'s credit quote; not generating.');
+       if (quote > o.maxCredits) {
+         await ui.clearPrompt().catch(() => {});
+         throw new FlowError(`Refusing: Flow quotes ${quote} credits, above max_credits=${o.maxCredits}. Raise max_credits to proceed.`);
+diff --git a/src/index.ts b/src/index.ts
+index dddc54e..9fca30e 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -28,7 +28,20 @@ const wrap = <A>(fn: (a: A) => Promise<unknown>) => async (a: A) => { try { retu
+ 
+ const projectId = z.string().describe('Flow project id (from flow_list_projects).');
+ const videoAspect = z.enum(['16:9', '9:16']);
++server.registerTool('flow_browser_state', {
++  title: 'Flow browser state', description: 'Read connection/login state only, without account identity. Never signs in or generates.',
++  inputSchema: {}, annotations: { readOnlyHint: true },
++}, wrap(() => browser.inspectState()));
+ const imageAspect = z.enum(['16:9', '9:16', '1:1', '4:3', '3:4']);
++server.registerTool('flow_inspect_ui', {
++  title: 'Inspect Flow composer controls', description: 'Read visible control labels only; never generates.',
++  inputSchema: { open_settings: z.boolean().default(false) }, annotations: { readOnlyHint: true },
++}, wrap(async ({ open_settings }) => {
++  const page = await browser.ready();
++  if (open_settings) { await page.locator('button:is([aria-label="Settings trigger"],[aria-label="Pemicu setelan"]):visible').click(); await page.waitForTimeout(400); }
++  const controls = await page.locator('button,[role="button"],[role="tab"],[role="radio"],[role="option"]').evaluateAll(elements => elements.filter(el => (el as HTMLElement).offsetParent && !el.querySelector('img') && !/@|google account|akun google/i.test(el.getAttribute('aria-label') || '')).slice(-30).map(el => ({tag:el.tagName,role:el.getAttribute('role'),label:el.getAttribute('aria-label'),text:(el as HTMLElement).innerText.slice(0,200),expanded:el.getAttribute('aria-expanded'),cls:el.className})));
++  return { controls, creditLines: (await page.locator('body').innerText()).split('\n').filter(line => /credits?|kredit/i.test(line)) };
++}));
+ const maxCredits = z.number().int().min(0).optional().describe(`Refuse if Flow's quote exceeds this (default ${DEFAULT_MAX_CREDITS}).`);
+ 
+ // ------------------------------------------------------------------ session & account
+diff --git a/src/ui.ts b/src/ui.ts
+index 67ffea9..96d061e 100644
+--- a/src/ui.ts
++++ b/src/ui.ts
+@@ -72,12 +72,12 @@ export class FlowUi {
+   // ------------------------------------------------------------------ composer parts
+ 
+   /** The visible composer = the visible "Start generation" button's nearest ancestor holding an editor. */
+-  private generateButton() { return this.page.locator('button[aria-label="Start generation"]:visible').first(); }
++  private generateButton() { return this.page.locator('button:is([aria-label="Start generation"],[aria-label="Mulai pembuatan"]):visible').first(); }
+ 
+   private async tagComposer() {
+     const ok = await this.page.evaluate(() => {
+       document.querySelectorAll('[data-flowmcp-composer]').forEach((e) => e.removeAttribute('data-flowmcp-composer'));
+-      let n: HTMLElement | null = [...document.querySelectorAll<HTMLElement>('button[aria-label="Start generation"]')].find((b) => b.offsetParent) ?? null;
++      let n: HTMLElement | null = [...document.querySelectorAll<HTMLElement>('button:is([aria-label="Start generation"],[aria-label="Mulai pembuatan"])')].find((b) => b.offsetParent) ?? null;
+       while (n && !n.querySelector('[contenteditable=true]')) n = n.parentElement;
+       if (n) n.setAttribute('data-flowmcp-composer', '1');
+       return !!n;
+@@ -88,7 +88,7 @@ export class FlowUi {
+ 
+   async clearPrompt() {
+     const c = await this.tagComposer();
+-    const clear = c.locator('button.clear-button:visible, button[aria-label="Clear prompt"]:visible').first();
++    const clear = c.locator('button.clear-button:visible, button:is([aria-label="Clear prompt"],[aria-label="Hapus perintah"]):visible').first();
+     if (await clear.count()) { await clear.click(); await this.page.waitForTimeout(500); }
+     const chips = await c.locator('flow-ingredient-chip').count();
+     if (chips) throw new UiError(`Could not clear ${chips} existing ingredient(s) from the prompt box.`);
+@@ -104,20 +104,19 @@ export class FlowUi {
+ 
+   // ------------------------------------------------------------------ settings menu
+ 
+-  private menuOpen() { return this.page.getByText(/Generating will use \d+ credits?/).first(); }
++  private menuOpen() { return this.page.locator('[role=radio]:visible').filter({ hasText: /videocam\s*Video/i }).first(); }
+ 
+   private async openSettings() {
+     if (await this.menuOpen().isVisible().catch(() => false)) return;
+     const c = await this.tagComposer();
+-    await c.locator('button[aria-label="Settings trigger"]').click();
++    await c.locator('button:is([aria-label="Settings trigger"],[aria-label="Pemicu setelan"])').click();
+     await this.menuOpen().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+   }
+ 
+   private async closeSettings() {
+     if (!(await this.menuOpen().isVisible().catch(() => false))) return;
+-    const c = await this.tagComposer();
+-    await c.locator('button[aria-label="Settings trigger"]').click();
+-    await this.menuOpen().waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
++    await this.page.keyboard.press('Escape');
++    await this.menuOpen().waitFor({ state: 'hidden', timeout: 5_000 });
+   }
+ 
+   /** Tag the smallest visible element whose normalised text matches `source` and click it. */
+@@ -140,24 +139,30 @@ export class FlowUi {
+   }
+ 
+   async readQuote(): Promise<number | undefined> {
+-    const t = await this.menuOpen().textContent().catch(() => null);
+-    const m = t?.match(/Generating will use (\d+)/);
+-    return m ? Number(m[1]) : undefined;
++    // Read the visible quote line, not a hidden duplicate composer/template.
++    const body = await this.page.locator('body').innerText();
++    const matches = body.split('\n').map(line => line.trim().match(/^(?:Generating will use|Pembuatan akan menggunakan)\s*(\d+)\s*(?:credits?|kredit)$/i)).filter(Boolean);
++    return matches.length === 1 && Number(matches[0]![1]) > 0 ? Number(matches[0]![1]) : undefined;
+   }
+ 
+   async isManualMode(): Promise<boolean> {
+-    await this.openSettings();
+-    const manual = await this.page.evaluate(() => /image\s*Image[\s\S]*videocam\s*Video/.test(
+-      [...document.querySelectorAll('body *')].map((e) => (e as HTMLElement).innerText || '').find((t) => /Generating will use/.test(t) && t.length < 600) ?? ''));
+-    await this.closeSettings();
+-    return manual;
++    const composer = await this.tagComposer();
++    // Flow hides the manual settings trigger while Agent mode is selected.
++    return composer.locator('button:is([aria-label="Settings trigger"],[aria-label="Pemicu setelan"])').isVisible();
+   }
+ 
+   async setMode(want: 'manual' | 'agent') {
++    if (want === 'manual') {
++      const agentPanelClose = this.page.locator('button.header-action:is([aria-label="Tutup"],[aria-label="Close"]):visible');
++      if (await agentPanelClose.count() === 1) {
++        await agentPanelClose.click();
++        await this.page.waitForTimeout(500);
++      }
++    }
+     for (let i = 0; i < 2; i++) {
+       if ((await this.isManualMode()) === (want === 'manual')) return;
+       const c = await this.tagComposer();
+-      await c.locator('button', { hasText: /^\s*Agent\s*$/ }).first().click();
++      await c.locator('button', { hasText: /^\s*(?:Agent|Agen)\s*$/ }).first().click();
+       await this.page.waitForTimeout(800);
+     }
+     throw new UiError(`Could not switch Flow's composer to ${want} mode.`);
+@@ -166,8 +171,8 @@ export class FlowUi {
+   /** Apply settings and return Flow's own credit quote. */
+   async configure(s: ComposerSettings): Promise<number | undefined> {
+     await this.openSettings();
+-    await this.clickText(s.kind === 'image' ? '^image Image$' : '^videocam Video$', s.kind);
+-    if (s.kind === 'video') await this.clickText(s.input === 'frames' ? '^crop_free Frames$' : '^chrome_extension Ingredients$', s.input ?? 'ingredients');
++    await this.clickText(s.kind === 'image' ? '^image (?:Image|Gambar)$' : '^videocam Video$', s.kind);
++    if (s.kind === 'video') await this.clickText(s.input === 'frames' ? '^crop_free (?:Frames?|Bingkai)$' : '^chrome_extension (?:Ingredients|Bahan)$', s.input ?? 'ingredients');
+     if (s.aspect) {
+       const icon: Record<string, string> = { '16:9': 'crop_16_9', '9:16': 'crop_9_16', '1:1': 'crop_square', '4:3': 'crop_landscape', '3:4': 'crop_portrait' };
+       await this.clickText(`^${icon[s.aspect]} ${esc(s.aspect)}$`, `aspect ${s.aspect}`);
+@@ -181,7 +186,7 @@ export class FlowUi {
+       }
+     }
+     if (s.resolution) await this.clickText(`^${esc(s.resolution)}$`, `resolution ${s.resolution} for ${s.model ?? 'this model'}`);
+-    if (s.durationSec) await this.clickText(`^${s.durationSec}s$`, `${s.durationSec}s duration for ${s.model ?? 'this model'}`);
++    if (s.durationSec) await this.clickText(`^${s.durationSec}\\s*(?:s|dtk)$`, `${s.durationSec}s duration for ${s.model ?? 'this model'}`);
+     if (s.count) await this.clickText(`^x${s.count}$`, `count x${s.count}`);
+     await this.page.waitForTimeout(500);
+     const quote = await this.readQuote();
+@@ -236,11 +241,13 @@ export class FlowUi {
+ 
+   /** Press Generate and return Flow's own generation response. */
+   async submitGeneration(timeoutMs = 60_000): Promise<{ rpcId?: string; data?: any; error?: unknown }> {
+-    const wait = this.page.waitForResponse((r: Response) => GEN_RPCS.test(r.url()) && r.request().method() === 'POST', { timeout: timeoutMs });
++    // Start consuming the body as soon as headers arrive. click() can await
++    // navigation; waiting for it first may lose the already-paid response body.
++    const wait = this.page.waitForResponse((r: Response) => GEN_RPCS.test(r.url()) && r.request().method() === 'POST', { timeout: timeoutMs }).then(async response => ({ text: await response.text() })).catch(error => ({ error }));
+     await this.generateButton().click();
+-    const resp = await wait.catch(() => undefined);
+-    if (!resp) throw new UiError('Flow did not send a generation request after pressing Generate (a setting may be missing or the button was disabled).');
+-    return parseBatch(await resp.text());
++    const resp = await wait;
++    if ('error' in resp) throw resp.error;
++    return parseBatch(resp.text);
+   }
+ 
+   /** Send the composer to the agent and return all StreamChat chunks of that turn. */

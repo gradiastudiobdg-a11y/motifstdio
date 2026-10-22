@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Motif — Flow Local Bridge",
+  "version": "0.1.0",
+  "description": "Pair a visible Google Flow tab with the local Motif job queue.",
+  "permissions": ["storage", "alarms", "debugger"],
+  "host_permissions": ["http://127.0.0.1:4317/*", "http://localhost:4317/*", "https://flow.google.com/*", "https://labs.google/fx/tools/flow*", "https://labs.google/fx/api/trpc/media.getMediaUrlRedirect*", "https://*.googleusercontent.com/*"],
+  "background": { "service_worker": "background.mjs", "type": "module" },
+  "action": { "default_popup": "popup.html", "default_title": "Motif Flow Bridge" },
+  "content_scripts": [{ "matches": ["https://flow.google.com/*", "https://labs.google/fx/tools/flow*"], "js": ["content.js"], "run_at": "document_idle" }],
+  "web_accessible_resources": [{ "resources": ["runner.mjs", "adapter.mjs", "selectors.mjs", "core.mjs", "diagnostics.mjs"], "matches": ["https://flow.google.com/*", "https://labs.google/*"] }]
+}

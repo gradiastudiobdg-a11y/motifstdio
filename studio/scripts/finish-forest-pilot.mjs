@@ -1,0 +1,24 @@
+import path from 'node:path';
+import {readFile,writeFile,stat} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {spawn} from 'node:child_process';
+import {finishVideo,parseMediaMetadata} from '../automation/finish-video-core.mjs';
+import {forestSoundDesign} from './forest-sound-design.mjs';
+const studio=path.resolve(import.meta.dirname,'..'),root=path.resolve(studio,'../exports/kai-a-forest-inside'),ffmpeg=path.join(studio,'tools/ffmpeg.exe');
+const ledger=JSON.parse(await readFile(path.join(root,'pilot.json'),'utf8'));
+const cutFile=path.join(root,'approved-cuts.json');
+const cuts=JSON.parse(await readFile(cutFile,'utf8'));
+const project={version:1,id:'kai-a-forest-inside',title:'A Forest Inside',brief:{style:'kai',duration:30,aspectRatio:'9:16',fps:30},captions:false,musicVolume:0,kaiLayout:{openingFontSize:72,revealFontSize:64,openingHookY:232,revealHookY:232,openingMaxLines:1,revealMaxLines:1,compactFooter:true,showProcessNotes:true,showTimestamp:false,showProgressBar:true},scenes:cuts.map(c=>({id:c.id,assetId:c.attempt,duration:c.duration,trimStart:c.trimStart,headline:c.headline||'',label:c.id,voiceover:'',visual:c.visual||'Real Google Flow paper shadowbox footage',...(c.mediaCrop?{mediaCrop:c.mediaCrop}:{}),motion:'',transition:'cut'}))};
+const assets=new Map();for(const a of ledger.attempts.filter(a=>a.kind==='video'&&a.result?.jobs?.length))assets.set(a.id,{id:a.id,path:path.join(root,'sources',a.id+'.mp4'),type:'video/mp4',source:{provider:'google-flow',projectId:ledger.project.id,mediaId:a.result.jobs[0].mediaId,testFixture:false}});
+await writeFile(path.join(root,'project.json'),JSON.stringify(project,null,2));
+const run=args=>new Promise((resolve,reject)=>{const p=spawn(ffmpeg,['-nostdin',...args],{windowsHide:true,stdio:['ignore','pipe','pipe']});let out='';p.stderr.on('data',d=>out=(out+d).slice(-18000));p.on('error',reject);p.on('exit',c=>c===0?resolve(out):reject(Error(out)))});
+const digest=createHash('sha256').update(JSON.stringify(project)).digest('hex'),cache=path.join(root,'render-project.sha256');
+if((await readFile(cache,'utf8').catch(()=>''))!==digest||!await stat(path.join(root,'final.mp4')).catch(()=>null)){await finishVideo({project,jobDir:root,ffmpegPath:ffmpeg,getAsset:async id=>assets.get(id)});await writeFile(cache,digest);}
+const cues=JSON.parse(await readFile(path.join(root,'sound-cues.json'),'utf8'));await writeFile(path.join(root,'forest-sound-design.wav'),forestSoundDesign(cues));
+const final=path.join(root,'kai-a-forest-inside-30s-no-music.mp4');
+await run(['-y','-hide_banner','-loglevel','error','-i',path.join(root,'final.mp4'),'-i',path.join(root,'forest-sound-design.wav'),'-map','0:v:0','-map','1:a:0','-c:v','copy','-af','loudnorm=I=-24:TP=-2:LRA=9,aresample=48000:ocl=stereo','-c:a','aac','-b:a','192k','-t','30','-movflags','+faststart',final]);
+const decoded=await run(['-hide_banner','-i',final,'-af','volumedetect','-f','null','-']),info=parseMediaMetadata(decoded);if(info.width!==1080||info.height!==1920||Math.abs(info.duration-30)>.05||info.fps!==30||!info.audio||info.meanVolume<=-45||!/Video:\s*h264/.test(decoded)||!/Audio:\s*aac/.test(decoded))throw Error('Final file validation failed');
+const billing=JSON.parse(await readFile(path.join(root,'billing-reconciliation.json'),'utf8'));
+const report={budgetCredits:ledger.budgetCredits,creditsReserved:ledger.spentReserved,creditsNet:billing.observedNetCredits,creditsRefunded:billing.observedRefundCredits,openingBalance:ledger.openingBalance,closingBalance:billing.closingBalance,photos:ledger.attempts.filter(a=>a.kind==='image').length,videoAttempts:ledger.attempts.filter(a=>a.kind==='video').length,selectedVideoSources:new Set(cuts.map(c=>c.attempt)).size,output:info,foley:{origin:'Original procedural non-musical sound design',timing:'Editable editorial placements guided by source-frame review; approximate synchronization',music:false,dialogue:false,cues},sources:cuts.map(c=>({sceneId:c.id,attempt:c.attempt,mediaId:assets.get(c.attempt).source.mediaId,trimStart:c.trimStart,duration:c.duration})),final};
+await writeFile(path.join(root,'production-report.json'),JSON.stringify(report,null,2));
+await writeFile(path.join(root,'publish.txt'),'A Forest Inside | Kai Makes Do\n\nA few layers of paper. A little world inside.\n\nA handmade-looking paper forest in a small shadowbox, with warm rear lighting revealing its depth.\n\nKai Makes Do is a fictional AI-created DIY inspiration series. Visuals are AI-generated and material sounds are designed. This is not a physically verified build tutorial. Apply the platform AI disclosure at upload.\n\n#KaiMakesDo #PaperCraft #ShadowBox #LittleMakes #DIYInspiration #Shorts\n');console.log(JSON.stringify(report));

@@ -1,0 +1,16 @@
+{
+  "name": "motif-automation-adapters",
+  "private": true,
+  "type": "module",
+  "description": "Background Codex, Indonesian speech, and Flow footage finishing adapters.",
+  "scripts": {
+    "setup": "node setup.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "1.0.11"
+  }
+}

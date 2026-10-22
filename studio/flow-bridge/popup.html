@@ -1,0 +1,9 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Motif Flow Bridge</title><link rel="stylesheet" href="popup.css"></head><body>
+<h1>Motif / Flow</h1><p>Satu akun Brave · 9:16 · satu hasil per scene</p>
+<label for="token">Token pairing dari studio lokal</label><input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Tempel token sekali"><button id="pair">Pair dengan studio</button>
+<label class="switch"><input id="enabled" type="checkbox"> Aktifkan worker untuk job yang diberi anggaran</label>
+<p class="note">Izin debugger dipakai hanya untuk klik/ketikan tepercaya pada tab Flow yang aktif. Tidak menjalankan evaluasi JavaScript, membaca cookie, atau mengamati jaringan. Izin diberikan saat kamu memasang extension nanti.</p>
+<p class="note">Biarkan satu tab proyek Flow aktif. Anggaran kredit dan jumlah generasi disetujui sekali per job di studio. Worker berhenti jika biaya atau UI tidak jelas.</p>
+<pre id="status" role="status">Memuat…</pre><button id="refresh">Refresh status</button><button id="release">Pakai tab Flow lain</button>
+<p class="note">Tidak ada rotasi akun. Tidak membaca cookie atau riwayat browser. Intent generasi tersimpan agar restart tidak mengirim generasi berbayar dua kali.</p>
+<script src="popup.mjs" type="module"></script></body></html>

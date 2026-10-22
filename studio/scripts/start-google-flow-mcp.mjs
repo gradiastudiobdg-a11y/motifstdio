@@ -1,0 +1,10 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawn } from 'node:child_process';
+import { flowMcpEnvironment } from '../automation/flow-mcp-environment.mjs';
+const studioDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repo = path.join(studioDir, '.studio/vendor/google-flow-mcp-reference');
+const child = spawn(process.execPath, [path.join(repo, 'dist/index.js')], { cwd: repo, env: await flowMcpEnvironment(studioDir), stdio: 'inherit', windowsHide: true });
+for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => child.kill(signal));
+child.once('error', () => { process.exitCode = 1; });
+child.once('exit', code => { process.exitCode = code ?? 1; });

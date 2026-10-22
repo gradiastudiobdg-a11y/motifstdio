@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>Flow semantic adapter fixture — not captured live UI</title>
+<style>body{font:16px sans-serif}form{width:600px;padding:30px}textarea{display:block;width:500px;height:80px}select,button{display:inline-block;margin:5px;min-width:40px;min-height:25px}video{width:180px;height:320px}</style>
+<form onsubmit="event.preventDefault()">
+<select aria-label="Generation type"><option>Image</option><option>Video</option></select>
+<select aria-label="Aspect ratio"><option>16:9</option><option>9:16</option></select>
+<select aria-label="Duration"><option>4 seconds</option><option>6 seconds</option><option>8 seconds</option></select>
+<select aria-label="Number of outputs"><option>2</option><option>1</option></select>
+<select aria-label="Model"><option>Veo 3.1 Fast</option></select>
+<textarea placeholder="Create a video"></textarea><button type="button" aria-label="Generate video">Generate video · 20 credits</button>
+</form><section id="results"></section>

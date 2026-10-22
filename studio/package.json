@@ -1,0 +1,16 @@
+{
+  "name": "motif-short-video-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first motion graphics studio: brief, storyboard, Flow prompts, media and MP4.",
+  "scripts": {
+    "start": "node server.mjs",
+    "start:flow-agent": "node scripts/start-flow-agent.mjs",
+    "setup:ffmpeg": "node scripts/setup-ffmpeg.mjs",
+    "demo": "node scripts/create-demo.mjs",
+    "test": "node scripts/test-all.mjs",
+    "setup:automation": "npm --prefix automation run setup"
+  },
+  "engines": { "node": ">=20" }
+}

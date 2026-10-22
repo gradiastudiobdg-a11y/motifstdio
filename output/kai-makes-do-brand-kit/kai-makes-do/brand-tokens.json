@@ -1,0 +1,116 @@
+{
+  "status": "adopted-for-studio",
+  "updated": "2026-10-21",
+  "name": "Kai Makes Do",
+  "wordmark": "kai makes do.",
+  "tagline": "Small ideas. Everyday stuff.",
+  "handleCandidate": "@kaimakesdo",
+  "handleVerified": false,
+  "character": {
+    "name": "Kai",
+    "fictional": true,
+    "age": 34,
+    "appearance": "Approachable good-looking Southeast Asian man; short black hair, clean-shaven, warm brown eyes, natural skin texture, average lean build",
+    "wardrobe": "Plain faded sage cotton crewneck T-shirt; neutral trousers; no apron or logos",
+    "setting": "Everyday home dining table, warm off-white wall, left daylight, small plant",
+    "reference": "assets/kai-home-reference.png"
+  },
+  "palette": {
+    "paper": "#F4EFE6",
+    "ink": "#29332D",
+    "sage": "#7D8C74",
+    "honey": "#E8B65E",
+    "clay": "#C68163"
+  },
+  "fonts": {
+    "main": "DM Sans",
+    "metadata": "IBM Plex Mono",
+    "hookWeight": 800,
+    "labelWeight": 600,
+    "metadataWeight": 500
+  },
+  "video": {
+    "width": 1080,
+    "height": 1920,
+    "ratio": "9:16",
+    "dialogue": false,
+    "voiceover": false,
+    "sound": "Tactile Foley and room tone; optional licensed instrumental music",
+    "safeRegionNote": "Conservative working region, not official platform guarantee; inspect upload previews",
+    "essentialRegion": {
+      "left": 72,
+      "top": 160,
+      "right": 876,
+      "bottom": 1480
+    },
+    "header": {
+      "x": 72,
+      "y": 168,
+      "width": 804,
+      "fontSize": 28,
+      "text": "LITTLE HOME IDEAS"
+    },
+    "divider": {
+      "x": 72,
+      "y": 216,
+      "width": 804
+    },
+    "hook": {
+      "x": 72,
+      "y": 246,
+      "width": 804,
+      "fontSize": 106,
+      "lineHeight": 0.98,
+      "maxLines": 2
+    },
+    "note": {
+      "x": 72,
+      "y": 300,
+      "maxWidth": 804,
+      "fontSize": 42,
+      "condition": "Only when opening hook is absent; reposition if the object or face occupies this area"
+    },
+    "footer": {
+      "x": 72,
+      "y": 1440,
+      "width": 804,
+      "fontSize": 25,
+      "text": "KAI MAKES DO / LITTLE MAKES"
+    },
+    "disclosureCue": null,
+    "disclosureNote": "No on-frame AI label. Keep truthful AI-fiction context in publishing metadata.",
+    "showEpisodeNumber": false
+  },
+  "series": [
+    {
+      "header": "LITTLE HOME IDEAS",
+      "footerSuffix": "LITTLE MAKES"
+    },
+    {
+      "header": "SECOND LIFE",
+      "footerSuffix": "REUSE NOTES"
+    },
+    {
+      "header": "TINY HOME FIXES",
+      "footerSuffix": "HOME NOTES"
+    }
+  ],
+  "examples": {
+    "opening": {
+      "hookLines": [
+        "THIS BOX",
+        "HAS A JOB."
+      ]
+    },
+    "process": {
+      "note": "Slide it into place."
+    },
+    "reveal": {
+      "hookLines": [
+        "A LITTLE",
+        "MORE USEFUL."
+      ],
+      "note": "Small ideas. Everyday stuff."
+    }
+  }
+}

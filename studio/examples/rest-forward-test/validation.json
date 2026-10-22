@@ -1,0 +1,69 @@
+{
+  "request": "Bikin short 30 detik tentang istirahat, editorial calm, Flow footage plus captions",
+  "skill": ".agents/skills/short-video-studio/SKILL.md",
+  "result": "passed — editable project and production handoff; external footage pending",
+  "editorialSeconds": 30,
+  "generatedSourceSecondsPlanned": 32,
+  "narrationWords": 59,
+  "scenePlans": [
+    {
+      "id": "scene-01",
+      "clipDuration": 8,
+      "clips": 1,
+      "generated": 8,
+      "trimStart": 0,
+      "trimEnd": 8,
+      "editorial": 8
+    },
+    {
+      "id": "scene-02",
+      "clipDuration": 8,
+      "clips": 1,
+      "generated": 8,
+      "trimStart": 0,
+      "trimEnd": 8,
+      "editorial": 8
+    },
+    {
+      "id": "scene-03",
+      "clipDuration": 8,
+      "clips": 1,
+      "generated": 8,
+      "trimStart": 0,
+      "trimEnd": 8,
+      "editorial": 8
+    },
+    {
+      "id": "scene-04",
+      "clipDuration": 8,
+      "clips": 1,
+      "generated": 8,
+      "trimStart": 0,
+      "trimEnd": 6,
+      "editorial": 6
+    }
+  ],
+  "checks": {
+    "frontendSchema": true,
+    "backendSchema": true,
+    "exactEditorialDuration": true,
+    "selectedStyle": true,
+    "captionsEnabled": true,
+    "vertical30fps": true,
+    "eightSecondSourceShots": true,
+    "finalSceneTrim": true,
+    "narrationSeparated": true,
+    "consistentVisualLocks": true,
+    "spokenPace": true,
+    "exactSubtitleEnd": true,
+    "noExternalMediaClaim": true
+  },
+  "errors": [],
+  "boundary": {
+    "externalCalls": 0,
+    "paidGenerations": 0,
+    "flowFootage": "Not generated. Use the visual prompts in Flow, then import downloaded clips into matching scene IDs.",
+    "narration": "Script only. No spoken-audio file has been generated.",
+    "mp4": "Not rendered by this forward handoff test. This example is ready for JSON import and local preview/export."
+  }
+}

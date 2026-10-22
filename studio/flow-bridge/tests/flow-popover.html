@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><title>Original fixture of published Flow control roles, not live UI</title>
+<style>body{font:16px sans-serif}button{min-width:60px;min-height:30px;margin:4px}form{width:640px;padding:20px}[role=textbox]{display:block;min-height:80px;border:1px solid;padding:8px}[hidden]{display:none!important}</style>
+<button id="new">New project</button><main id="workspace" hidden><form onsubmit="event.preventDefault()">
+<div role="textbox" contenteditable="true" data-lexical-editor="true" aria-label="What do you want to create?"></div>
+<button type="button" id="pill">Veo 3.1 - Fast crop_16_9 x2</button><button type="button" id="submit">arrow_forward Create · 20 credits</button>
+</form></main>
+<div id="settings" data-radix-popper-content-wrapper hidden><div role="menu" data-state="open">
+<button role="radio" data-group="mode" data-state="on">Image</button><button role="radio" data-group="mode" data-state="off">videocam Video</button>
+<button role="radio" data-group="input" data-state="off">Ingredients</button><button role="radio" data-group="input" data-state="on">Frames</button>
+<button role="radio" data-group="aspect" data-state="on">crop_16_9 16:9</button><button role="radio" data-group="aspect" data-state="off">crop_9_16 9:16</button>
+<button role="radio" data-group="duration" data-state="on">4s</button><button role="radio" data-group="duration" data-state="off">6s</button><button role="radio" data-group="duration" data-state="off">8s</button>
+<button role="radio" data-group="outputs" data-state="off">1x</button><button role="radio" data-group="outputs" data-state="on">x2</button><button>Veo 3.1 - Fast arrow_drop_down</button>
+</div></div>
+<script>
+document.querySelector('#new').onclick=()=>{document.querySelector('#workspace').hidden=false;document.querySelector('#new').hidden=true};
+document.querySelector('#pill').onclick=()=>{document.querySelector('#settings').hidden=!document.querySelector('#settings').hidden};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelector('#settings').hidden=true});
+document.querySelectorAll('[data-group]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-group="'+b.dataset.group+'"]').forEach(x=>x.dataset.state='off');b.dataset.state='on';const portrait=document.querySelector('[data-group=aspect][data-state=on]').textContent.includes('9:16'),one=document.querySelector('[data-group=outputs][data-state=on]').textContent==='1x';document.querySelector('#pill').textContent='Veo 3.1 - Fast '+(portrait?'crop_9_16':'crop_16_9')+' '+(one?'x1':'x2')});
+</script>

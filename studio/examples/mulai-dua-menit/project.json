@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "id": "demo-mulai-dua-menit",
+  "title": "Mulai dari Dua Menit",
+  "createdAt": "2026-10-18T17:40:09.610Z",
+  "brief": {
+    "topic": "Berhenti menunggu motivasi. Mulai dari dua menit.",
+    "audience": "Anak muda yang ingin mulai konsisten",
+    "tone": "Hangat & tegas",
+    "style": "kinetic",
+    "duration": 30,
+    "aspectRatio": "9:16",
+    "fps": 30,
+    "clipDuration": 6,
+    "accent": "#D6FF63"
+  },
+  "scenes": [
+    {
+      "id": "scene-01",
+      "label": "HOOK",
+      "duration": 6,
+      "headline": "Mulai dari dua menit",
+      "voiceover": "Kalau menunggu siap terus, kapan mulai?",
+      "visual": "timer bundar, satu titik kecil, dan anak tangga yang rendah; komposisi awal dengan satu objek utama yang jelas",
+      "motion": "Objek utama muncul dari skala 0.88 menuju 1 dengan spring lembut; kamera mendekat perlahan.",
+      "transition": "cut",
+      "assetId": null,
+      "trimStart": 0
+    },
+    {
+      "id": "scene-02",
+      "label": "BEAT 01",
+      "duration": 6,
+      "headline": "Perasaanmu boleh berubah",
+      "voiceover": "Motivasi bisa berubah. Langkah yang lebih kecil dapat lebih mudah dimulai.",
+      "visual": "dua bidang berbeda ukuran yang menggambarkan energi naik dan turun",
+      "motion": "Dua bidang bergerak pelan dengan amplitudo berbeda; kamera tetap tenang.",
+      "transition": "dissolve",
+      "assetId": null,
+      "trimStart": 0
+    },
+    {
+      "id": "scene-03",
+      "label": "BEAT 02",
+      "duration": 6,
+      "headline": "Kecilkan langkahnya",
+      "voiceover": "Kalau rencananya terasa terlalu berat, kecilkan langkah pertama sampai lebih mudah dicoba.",
+      "visual": "tangga tinggi berubah menjadi beberapa pijakan pendek, satu pijakan diberi aksen",
+      "motion": "Pijakan tinggi turun menjadi pijakan rendah; bentuk berakhir stabil tanpa pantulan berlebihan.",
+      "transition": "iris",
+      "assetId": null,
+      "trimStart": 0
+    },
+    {
+      "id": "scene-04",
+      "label": "BEAT 03",
+      "duration": 6,
+      "headline": "Buat langkahnya jelas",
+      "voiceover": "Pilih satu tindakan. Pasang dua menit. Mulai dari versi paling sederhana.",
+      "visual": "timer bundar dan satu anak tangga rendah",
+      "motion": "Satu objek bergeser ke pusat; cincin timer terisi perlahan dengan gerak halus.",
+      "transition": "wipe",
+      "assetId": null,
+      "trimStart": 0
+    },
+    {
+      "id": "scene-05",
+      "label": "AJAKAN",
+      "duration": 6,
+      "headline": "Mulai dari sini",
+      "voiceover": "Mulai dua menit hari ini. Setelah itu, kamu boleh berhenti.",
+      "visual": "timer bundar, satu titik kecil, dan anak tangga yang rendah; komposisi akhir sederhana dengan ruang kosong untuk headline editor",
+      "motion": "Objek utama maju satu langkah kecil lalu berhenti; kamera menahan posisi akhir selama seperempat durasi.",
+      "transition": "dissolve",
+      "assetId": null,
+      "trimStart": 0
+    }
+  ],
+  "publishing": {
+    "titles": [
+      "Mulai dari dua menit",
+      "Berhenti menunggu motivasi. Mulai dari dua menit — satu langkah hari ini",
+      "Kamu boleh mulai dari hal kecil"
+    ],
+    "description": "Berhenti menunggu motivasi. Mulai dari dua menit. Sebuah pengingat untuk anak muda yang ingin mulai konsisten. Pilih satu langkah yang cocok dengan keadaanmu hari ini. Simpan jika ingin kembali ke pengingat ini.",
+    "hashtags": [
+      "#LangkahKecil",
+      "#MotivasiHarian",
+      "#ProsesBertumbuh",
+      "#YouTubeShorts"
+    ],
+    "thumbnailPrompt": "Kinetic Type, rasio 9:16. Satu objek simbolis: timer bundar dan satu anak tangga rendah. Latar #11121A, objek terang #F6F0E6, aksen #D6FF63. Kontras kuat, komposisi poster sederhana, sisakan ruang atas untuk judul yang ditambahkan editor, tanpa huruf hasil generasi."
+  },
+  "captions": true,
+  "musicVolume": 0.35,
+  "musicAssetId": "dbf2f224-f1b5-4864-b65a-af5b407a09dd",
+  "voiceoverAssetId": null,
+  "assets": [
+    {
+      "id": "dbf2f224-f1b5-4864-b65a-af5b407a09dd",
+      "name": "motif-original-ambient-120bpm.wav",
+      "type": "audio/wav",
+      "size": 5760044,
+      "url": "/api/assets/dbf2f224-f1b5-4864-b65a-af5b407a09dd",
+      "createdAt": "2026-10-18T17:40:10.695Z"
+    }
+  ],
+  "updatedAt": "2026-10-18T17:40:10.701Z"
+}

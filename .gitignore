@@ -1,0 +1,37 @@
+studio/.studio/
+studio/tools/node_modules/
+studio/automation/node_modules/
+studio/automation/.venv/
+studio/tools/ffmpeg.exe
+studio/tools/ffmpeg
+node_modules/
+*.log
+
+# Local production output, job receipts, and browser/account runtime.
+/exports/
+**/.studio/
+/.codex/
+.env
+.env.*
+!.env.example
+**/cookies.json
+**/storage-state*.json
+
+# Keep the adopted source brand kit; omit other exploratory output folders.
+/output/*
+!/output/kai-makes-do-brand-kit/
+/output/kai-makes-do-brand-kit/*
+!/output/kai-makes-do-brand-kit/kai-makes-do/
+
+# Generated media and duplicate reference archive stay on the workstation.
+*.mp4
+*.mov
+*.webm
+*.wav
+*.mp3
+/pop-cinematic-motion.zip
+
+# Local machine/editor files.
+.DS_Store
+Thumbs.db
+desktop.ini

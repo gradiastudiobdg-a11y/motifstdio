@@ -1,0 +1,17 @@
+{
+  "checked": "2026-10-21",
+  "desktop": 1560,
+  "mobile": [
+    390,
+    320
+  ],
+  "dimensions": [
+    1080,
+    1920
+  ],
+  "previewInteraction": "passed",
+  "desktopOverflow": false,
+  "mobileOverflow": false,
+  "narrowOverflow": false,
+  "pageErrors": []
+}
